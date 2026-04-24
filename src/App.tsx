@@ -2925,7 +2925,8 @@ export default function App() {
         const isAdminEmail = 
           user.email === 'akwabanewsinfo@gmail.com' || 
           user.email === 'kwabanewsinfo@gmail.com' ||
-          user.email === 'rikutotraore@gmail.com';
+          user.email === 'rikutotraore@gmail.com' ||
+          user.email === 'kassiri.traore@gmail.com';
         
         if (isAdminEmail) {
           setIsAdminAuthenticated(true);
@@ -3038,9 +3039,10 @@ export default function App() {
 
   const handleAdminLogin = async () => {
     try {
-      const adminEmail = 'akwabanewsinfo@gmail.com';
+      // Prioritize current user if already logged in, otherwise use fallback admin
+      const adminEmail = currentUser?.email || 'akwabanewsinfo@gmail.com';
       setActiveNotification({ 
-        message: "Envoi du lien d'accès sécurisé...", 
+        message: `Envoi du lien d'accès sécurisé à ${adminEmail}...`, 
         type: 'info' 
       });
       await signInWithOtp(adminEmail);
