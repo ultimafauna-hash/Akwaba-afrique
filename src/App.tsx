@@ -303,7 +303,7 @@ const Footer = ({ onNavigate, categories }: { onNavigate: (v: any) => void, cate
       </div>
 
         <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
-         <p>© 2024 AKWABA INFO. TOUS DROITS RÉSERVÉS.</p>
+         <p>© 2024 <span className="text-white">AKWABA</span> <span className="text-primary">INFO</span>. TOUS DROITS RÉSERVÉS.</p>
          <div className="flex gap-8">
             <button className="hover:text-primary transition-colors">Mentions Légales</button>
             <button className="hover:text-primary transition-colors">Confidentialité</button>
@@ -2253,7 +2253,7 @@ const SplashScreen = ({ isDarkMode }: { isDarkMode: boolean }) => {
             transition={{ delay: 0.5, duration: 0.8 }}
             className="text-4xl md:text-6xl font-black tracking-tighter uppercase"
           >
-            <span className="text-black dark:text-white">AKWABA</span> <span className="text-primary">INFO</span>
+            <span className="text-slate-950 dark:text-white">AKWABA</span> <span className="text-primary">INFO</span>
           </motion.h1>
           <motion.p 
             initial={{ y: 20, opacity: 0 }}
@@ -4084,6 +4084,17 @@ export default function App() {
     // Handle home redirect if needed
   }, []);
 
+  const handleLogoClick = () => {
+    const newCount = adminClickCount + 1;
+    if (newCount >= 5) {
+      setCurrentView('admin');
+      setAdminClickCount(0);
+    } else {
+      setAdminClickCount(newCount);
+      goHome();
+    }
+  };
+
   const goHome = () => {
     setActiveCategory('À la une');
     navigate('/');
@@ -4452,7 +4463,7 @@ export default function App() {
               <Menu size={24} />
             </button>
             <div 
-              onClick={goHome}
+              onClick={handleLogoClick}
               className="flex items-center gap-3 cursor-pointer group"
             >
               <img 
@@ -4463,9 +4474,9 @@ export default function App() {
               />
               <div className="flex flex-col">
                 <h1 className="text-xl md:text-2xl font-black italic tracking-tighter leading-none uppercase">
-                  <span className="text-black dark:text-white">AKWABA</span> <span className="text-primary">INFO</span>
+                  <span className="text-slate-950 dark:text-white">AKWABA</span> <span className="text-primary">INFO</span>
                 </h1>
-                <span className="text-[8px] md:text-[10px] font-black text-slate-800 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">Premier sur l'Afrique</span>
+                <span className="text-[8px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">L’info du monde en un clic</span>
               </div>
             </div>
           </div>

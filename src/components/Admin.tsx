@@ -243,12 +243,16 @@ export const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
         className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-slate-100"
       >
         <div className="flex flex-col items-center gap-6 mb-8 text-center">
-          <div className="p-4 bg-primary/10 rounded-2xl text-primary">
-            <Lock size={40} />
-          </div>
+          <img 
+            src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" 
+            className="w-20 h-20 rounded-2xl border border-slate-100 p-1 object-contain" 
+            alt="Logo" 
+          />
           <div>
-            <h2 className="text-2xl font-black">Espace Admin</h2>
-            <p className="text-slate-400 text-sm mt-1">Authentification sécurisée par lien magique.</p>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase">
+              <span className="text-slate-950">AKWABA</span> <span className="text-primary">INFO</span>
+            </h1>
+            <p className="text-slate-400 text-xs mt-2 font-bold uppercase tracking-widest">Espace Administration</p>
           </div>
         </div>
         
@@ -774,11 +778,15 @@ export const AdminDashboard = ({
       )}>
         <div className="p-8 shrink-0">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-               <Zap size={24} fill="currentColor" />
-             </div>
+             <img 
+               src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" 
+               className="w-10 h-10 rounded-xl border border-slate-100 dark:border-slate-800 p-1 object-contain bg-white" 
+               alt="Logo" 
+             />
              <div>
-               <h1 className="text-xl font-black italic tracking-tighter dark:text-white">AKWABA <span className="text-primary">ADMIN</span></h1>
+               <h1 className="text-xl font-black italic tracking-tighter dark:text-white">
+                 <span className="text-slate-950 dark:text-white">AKWABA</span> <span className="text-primary">ADMIN</span>
+               </h1>
                <p className="text-[8px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-[0.2em]">Management Suite v2</p>
              </div>
           </div>
