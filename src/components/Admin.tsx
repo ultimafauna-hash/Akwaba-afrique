@@ -2184,6 +2184,9 @@ export const AdminDashboard = ({
                       </div>
                       <div className="min-w-0">
                         <p className="font-black text-slate-900 truncate text-sm">{video.title}</p>
+                        {video.description && (
+                          <p className="text-[10px] text-slate-400 truncate max-w-xs italic">{video.description}</p>
+                        )}
                         <p className="text-[10px] text-slate-400 font-bold truncate tracking-widest uppercase">
                           {video.views} vues
                         </p>

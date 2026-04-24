@@ -74,7 +74,7 @@ import {
   ExternalLink,
   List as ListIcon
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useSpring, useTransform } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -357,22 +357,32 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
   onAuthorClick?: (name: string) => void;
   categoryIcon?: string;
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: cardRef,
+    offset: ["start end", "end start"]
+  });
+
+  const y = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
+
   if (!article) return null;
 
   if (variant === 'hero') {
     return (
       <motion.div 
+        ref={cardRef}
         id={`article-card-hero-${article.id}`}
         whileTap={{ scale: 0.98 }}
         onClick={onClick}
         className="relative h-[240px] w-full rounded-2xl overflow-hidden shadow-xl cursor-pointer group bg-slate-100"
       >
         {article.image && (
-          <img 
+          <motion.img 
+            style={{ y, scale: 1.2 }}
             id={`article-img-hero-${article.id}`}
             src={optimizeImage(article.image, 600)} 
             alt={article.title}
-            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-125"
             referrerPolicy="no-referrer"
             loading="lazy"
             decoding="async"
@@ -412,6 +422,7 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
 
   return (
     <motion.div 
+      ref={cardRef}
       id={`article-card-${variant}-${article.id}`}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
@@ -425,11 +436,12 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
           "relative overflow-hidden",
           variant === 'vertical' ? 'w-full h-40' : 'w-24 h-24 shrink-0'
         )}>
-          <img 
+          <motion.img 
+            style={{ y, scale: 1.2 }}
             id={`article-img-${variant}-${article.id}`}
             src={optimizeImage(article.image, variant === 'vertical' ? 500 : 200)} 
             alt={article.title}
-            className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-110"
+            className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-125"
             referrerPolicy="no-referrer"
             loading="lazy"
             decoding="async"
@@ -1287,6 +1299,9 @@ const WebTVView = ({ videos, onVideoClick }: { videos: WebTV[], onVideoClick: (v
               </div>
               <div className="p-8 space-y-4">
                 <h3 className="font-display font-black text-xl leading-tight line-clamp-2 group-hover:text-primary transition-colors">{video.title}</h3>
+                {video.description && (
+                  <p className="text-slate-500 text-sm line-clamp-2 h-10">{video.description}</p>
+                )}
                 <div className="flex items-center gap-2 text-xs text-slate-400 font-bold">
                   <Clock size={14} />
                   <span>{safeFormatDate(video.date, 'dd MMMM yyyy')}</span>
@@ -6243,15 +6258,15 @@ Dernière mise à jour : Avril 2026
         </button>
         <button onClick={() => navigateTo('search')} className={cn("flex flex-col items-center gap-1", currentView === 'search' ? "text-primary" : "text-slate-400")}>
           <Search size={20} />
-          <span className="text-[10px] font-bold">Explorer</span>
+          <span className="text-[10px] font-bold">Recherche</span>
         </button>
         <button onClick={() => navigateTo('donate')} className={cn("flex flex-col items-center gap-1", currentView === 'donate' ? "text-primary" : "text-slate-400")}>
           <Heart size={20} />
-          <span className="text-[10px] font-bold">Soutenir</span>
+          <span className="text-[10px] font-bold">Dons</span>
         </button>
-        <button onClick={() => navigateTo('about')} className={cn("flex flex-col items-center gap-1", currentView === 'about' ? "text-primary" : "text-slate-400")}>
+        <button onClick={() => navigateTo('profile')} className={cn("flex flex-col items-center gap-1", currentView === 'profile' ? "text-primary" : "text-slate-400")}>
           <User size={20} />
-          <span className="text-[10px] font-bold">À propos</span>
+          <span className="text-[10px] font-bold">Profil</span>
         </button>
       </nav>
       )}
