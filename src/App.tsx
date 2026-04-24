@@ -10,6 +10,7 @@ import {
   ChevronRight, 
   ChevronLeft,
   ArrowLeft,
+  ArrowUp,
   Home,
   Globe,
   Map,
@@ -103,6 +104,215 @@ import {
 type FirebaseUser = any; 
 
 // --- Components ---
+
+const BackToTop = () => {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => setVisible(window.scrollY > 500);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.button 
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-24 right-6 z-[90] p-4 bg-primary text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all lg:bottom-10"
+        >
+          <ArrowUp size={24} />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const WeatherWidget = () => {
+  const [date, setDate] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setDate(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="hidden lg:flex flex-col items-end gap-0.5 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 pr-4 mr-4">
+      <div className="flex items-center gap-1.5 text-slate-900 dark:text-white">
+        <Clock size={12} className="text-primary" />
+        {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+      </div>
+      <div>{date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+    </div>
+  );
+};
+
+const TopNotice = ({ message, onClose }: { message: string, onClose: () => void }) => (
+  <motion.div 
+    initial={{ y: -100 }}
+    animate={{ y: 0 }}
+    className="bg-primary text-white py-2 px-4 relative z-[200] flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em]"
+  >
+    <div className="flex items-center gap-2">
+      <TrendingUp size={12} className="animate-pulse" />
+      <span>{message}</span>
+    </div>
+    <button onClick={onClose} className="absolute right-4 hover:scale-110 transition-transform">
+      <X size={14} />
+    </button>
+  </motion.div>
+);
+
+const Breadcrumb = ({ items }: { items: { label: string; onClick?: () => void; active?: boolean }[] }) => (
+  <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-400 mb-8 overflow-x-auto no-scrollbar whitespace-nowrap">
+    <button onClick={items[0].onClick} className="hover:text-primary transition-colors flex items-center gap-1 text-slate-900 dark:text-white">
+      <Home size={10} /> ACCUEIL
+    </button>
+    {items.slice(1).map((item, i) => (
+      <React.Fragment key={i}>
+        <ChevronRight size={10} className="shrink-0 text-slate-300 dark:text-slate-700" />
+        {item.onClick && !item.active ? (
+          <button onClick={item.onClick} className="hover:text-primary transition-colors">
+            {item.label}
+          </button>
+        ) : (
+          <span className={cn(item.active ? "text-primary px-2 bg-primary/5 rounded-lg py-0.5" : "text-slate-900 dark:text-white")}>{item.label}</span>
+        )}
+      </React.Fragment>
+    ))}
+  </nav>
+);
+
+const ShareFloatingButtons = ({ title, url }: { title: string, url: string }) => {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = window.location.href;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareTw = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+  const shareFb = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+  const shareLi = () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+
+  return (
+    <div className="fixed left-6 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col gap-4">
+      <div className="bg-white dark:bg-slate-900 rounded-full shadow-2xl p-2 border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+        {[
+          { icon: Facebook, color: 'text-blue-600', onClick: shareFb, label: 'Facebook' },
+          { icon: Twitter, color: 'text-sky-500', onClick: shareTw, label: 'Twitter' },
+          { icon: Linkedin, color: 'text-blue-700', onClick: shareLi, label: 'LinkedIn' },
+          { icon: copied ? Check : Copy, color: copied ? 'text-green-500' : 'text-slate-400', onClick: handleCopy, label: 'Copier' }
+        ].map((btn, i) => (
+          <motion.button
+            key={i}
+            whileHover={{ scale: 1.1, x: 5 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={btn.onClick}
+            className={cn("p-3 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors", btn.color)}
+            title={btn.label}
+          >
+            <btn.icon size={20} />
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const Footer = ({ onNavigate, categories }: { onNavigate: (v: any) => void, categories: string[] }) => (
+  <footer className="bg-slate-900 text-white pt-20 pb-10 mt-20 relative overflow-hidden">
+    <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none">
+       <img src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" className="w-96 h-96 grayscale invert" alt="" />
+    </div>
+    
+    <div className="max-w-7xl mx-auto px-6 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+             <img 
+               src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" 
+               className="w-16 h-16 rounded-2xl border border-white/10 p-2 object-contain" 
+               alt="Logo" 
+             />
+             <h2 className="text-2xl font-black tracking-tighter text-white">AKWABA <span className="text-primary">INFO</span></h2>
+          </div>
+          <p className="text-slate-300 text-sm leading-relaxed font-medium">
+            Le portail d'information de référence sur l'Afrique et le monde. Indépendance, véracité et proximité au cœur de notre rédaction.
+          </p>
+          <div className="flex gap-4">
+             {[Facebook, Twitter, Instagram, Linkedin, Youtube].map((Icon, i) => (
+               <button key={i} className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all text-slate-300 hover:text-white">
+                 <Icon size={18} />
+               </button>
+             ))}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h3 className="text-lg font-black uppercase tracking-widest text-primary italic">Navigation</h3>
+          <ul className="space-y-3">
+            {['Home', 'Politique', 'Afrique', 'Monde', 'Tech', 'Culture', 'Santé', 'Sport'].map(item => (
+              <li key={item}>
+                <button 
+                  onClick={() => onNavigate(item === 'Home' ? 'home' : 'categories')} 
+                  className="text-slate-300 hover:text-white transition-colors text-sm font-bold flex items-center gap-2 group"
+                >
+                  <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  {item}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-6">
+          <h3 className="text-lg font-black uppercase tracking-widest text-primary italic">Services</h3>
+          <ul className="space-y-3">
+            {['Annonces', 'Web TV', 'Agenda Culturel', 'Direct (Live)', 'Faire un don', 'Auteurs'].map(item => (
+              <li key={item}>
+                <button 
+                  onClick={() => onNavigate(item)} 
+                  className="text-slate-300 hover:text-white transition-colors text-sm font-bold flex items-center gap-2 group"
+                >
+                  <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  {item}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-6">
+          <h3 className="text-lg font-black uppercase tracking-widest text-primary italic">Newsletter</h3>
+          <p className="text-slate-300 text-sm font-medium">Restez informé des dernières actualités africaines chaque matin.</p>
+          <div className="flex gap-2">
+             <input 
+               type="email" 
+               placeholder="votre@email.com" 
+               className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm flex-1 outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold text-white placeholder:text-slate-500" 
+             />
+             <button className="bg-primary text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+               <Send size={20} />
+             </button>
+          </div>
+        </div>
+      </div>
+
+        <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+         <p>© 2024 AKWABA INFO. TOUS DROITS RÉSERVÉS.</p>
+         <div className="flex gap-8">
+            <button className="hover:text-primary transition-colors">Mentions Légales</button>
+            <button className="hover:text-primary transition-colors">Confidentialité</button>
+            <button className="hover:text-primary transition-colors">Contact</button>
+         </div>
+      </div>
+    </div>
+  </footer>
+);
 
 // --- Helper Functions ---
 
@@ -466,7 +676,7 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
           <div className="flex justify-between items-start mb-1">
             <Badge category={article.category} icon={categoryIcon}>{article.category}</Badge>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-slate-400">{article.readingtime}</span>
+              <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">{article.readingtime}</span>
               {variant === 'horizontal' && (
                 <button 
                   onClick={(e) => onBookmark?.(article.id, e)}
@@ -496,18 +706,18 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between mt-2 text-[10px] text-slate-500">
+        <div className="flex items-center justify-between mt-2 text-[10px] text-slate-600 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <span 
               onClick={(e) => { e.stopPropagation(); onAuthorClick?.(article.author); }}
-              className="font-bold hover:text-primary cursor-pointer transition-colors"
+              className="font-black italic hover:text-primary cursor-pointer transition-colors text-slate-900 dark:text-slate-200"
             >
               {article.author}
             </span>
-            <span>•</span>
-            <span>{safeFormatDate(article.date, 'dd MMM yyyy')}</span>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <span className="font-bold">{safeFormatDate(article.date, 'dd MMM yyyy')}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 font-bold">
             <span className="flex items-center gap-0.5"><Eye size={10} /> {article.views}</span>
             <span className="flex items-center gap-0.5"><Heart size={10} /> {article.likes}</span>
           </div>
@@ -3928,6 +4138,8 @@ export default function App() {
       .slice(0, 8);
   }, [currentUser, userFollowedCategories, visibleArticles]);
 
+  const [showTopNotice, setShowTopNotice] = useState(true);
+
   if (siteSettings.maintenancemode && !isAdminAuthenticated && currentView !== 'admin') {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center space-y-6">
@@ -3941,6 +4153,14 @@ export default function App() {
 
   return (
     <>
+      <AnimatePresence>
+        {showTopNotice && (
+          <TopNotice 
+            message="Suivez l'actualité en temps réel sur Akwaba Info - Le direct est disponible !" 
+            onClose={() => setShowTopNotice(false)} 
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {showSplash && <SplashScreen isDarkMode={isDarkMode} />}
       </AnimatePresence>
@@ -4101,7 +4321,7 @@ export default function App() {
       {/* Reading Progress Bar */}
       {currentView === 'article' && (
         <motion.div
-          className="fixed top-0 left-0 right-0 h-1 bg-primary origin-left z-[110]"
+          className="fixed top-0 left-0 right-0 h-1.5 bg-primary origin-left z-[110] shadow-[0_0_10px_rgba(31,164,99,0.5)]"
           style={{ scaleX }}
         />
       )}
@@ -4223,135 +4443,61 @@ export default function App() {
         "sticky top-0 z-50 backdrop-blur-xl border-b transition-colors",
         isDarkMode ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-slate-200"
       )}>
-        <div className="max-w-7xl mx-auto px-4 h-24 md:h-28 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+        <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors"
+              className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400 transition-all"
             >
               <Menu size={24} />
             </button>
-            {isAdminAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-8 bg-primary rounded-full transition-all" />
-                <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase">ADMIN</h1>
+            <div 
+              onClick={goHome}
+              className="flex items-center gap-3 cursor-pointer group"
+            >
+              <img 
+                src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" 
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl border border-slate-100 dark:border-slate-800 p-1 object-contain transition-transform group-hover:scale-110" 
+                alt="Logo" 
+                referrerPolicy="no-referrer"
+              />
+              <div className="flex flex-col">
+                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter leading-none text-slate-950 dark:text-white uppercase">AKWABA <span className="text-primary">INFO</span></h1>
+                <span className="text-[8px] md:text-[10px] font-extrabold text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">Premier sur l'Afrique</span>
               </div>
-            ) : (
-              <div 
-                onClick={() => {
-                  const newCount = adminClickCount + 1;
-                  if (newCount >= 5) {
-                    if (isAdminAuthenticated) {
-                      navigate('/admin');
-                      setActiveNotification("Mode Admin : Bonjour !");
-                    } else {
-                      navigate('/admin');
-                      setActiveNotification("Mode Admin : Authentification requise.");
-                    }
-                    setAdminClickCount(0);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    setTimeout(() => setActiveNotification(null), 3000);
-                  } else {
-                    setAdminClickCount(newCount);
-                    // Optional: visual feedback in dev console or subtle toast
-                  }
-                }}
-                className="cursor-pointer flex items-center gap-4 group"
-              >
-                <img 
-                  src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" 
-                  alt="Akwaba Info Logo" 
-                  className="w-16 h-16 md:w-20 md:h-20 object-contain rounded-2xl shadow-md border border-slate-50 group-active:scale-95 transition-transform"
-                  referrerPolicy="no-referrer"
-                  decoding="async"
-                />
-                <div onClick={(e) => { e.stopPropagation(); goHome(); }}>
-                  <h1 className="text-xl md:text-3xl font-black tracking-tighter">
-                    AKWABA <span className="text-primary">INFO</span>
-                  </h1>
-                  <p className="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest -mt-1">
-                    L’info du monde en un clic
-                  </p>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-4 overflow-x-auto flex-nowrap no-scrollbar flex-1 justify-center px-4">
-            {categories.map(cat => (
-              <button 
-                key={cat}
-                onClick={() => handleCategoryClick(cat)}
-                className={cn(
-                  "text-sm font-bold transition-colors hover:text-primary whitespace-nowrap flex items-center gap-1.5",
-                  activeCategory === cat && currentView === 'home' ? "text-primary" : "text-slate-500"
-                )}
-              >
-                <span>{siteSettings?.categories_icons?.[cat] || '📰'}</span>
-                <span>{cat}</span>
-              </button>
-            ))}
-            <button 
-              onClick={() => navigateTo('live-blog')}
-              className={cn(
-                "text-sm font-bold transition-colors hover:text-red-600 flex items-center gap-1",
-                currentView === 'live-blog' ? "text-red-600 underline underline-offset-4" : "text-slate-500"
-              )}
-            >
-              <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse" /> Direct
-            </button>
-            <button 
-              onClick={() => navigateTo('classifieds')}
-              className={cn(
-                "text-sm font-bold transition-colors hover:text-slate-900 whitespace-nowrap",
-                currentView === 'classifieds' ? "text-slate-900 underline underline-offset-4" : "text-slate-500"
-              )}
-            >
-              Annonces
-            </button>
-            <button 
-              onClick={() => navigateTo('webtv')}
-              className={cn(
-                "text-sm font-bold transition-colors hover:text-secondary whitespace-nowrap",
-                currentView === 'webtv' ? "text-secondary underline underline-offset-4" : "text-slate-500"
-              )}
-            >
-              Web TV
-            </button>
-            <button 
-              onClick={() => navigateTo('all-events')}
-              className={cn(
-                "text-sm font-bold transition-colors hover:text-primary whitespace-nowrap",
-                currentView === 'all-events' ? "text-primary underline underline-offset-4" : "text-slate-500"
-              )}
-            >
-              Agenda
-            </button>
-          </nav>
-
-          <div className="flex items-center gap-1 md:gap-2 flex-shrink">
-            {!isAdminAuthenticated && (
-              <button 
-                onClick={() => navigateTo('search')}
-                className={cn("p-2 rounded-full transition-all group", isDarkMode ? "hover:bg-slate-800" : "hover:bg-slate-100")}
-              >
-                <div className="flex items-center gap-1">
-                  <Search size={22} />
-                </div>
+          <div className="hidden lg:flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-2 py-1 mx-8 max-w-xl flex-1 focus-within:ring-2 focus-within:ring-primary/20 transition-all group">
+            <Search size={18} className="text-slate-500 dark:text-slate-400 ml-2 group-focus-within:text-primary transition-colors" />
+            <input 
+              type="text" 
+              placeholder="Rechercher un article, un auteur..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && navigateTo('search')}
+              className="bg-transparent border-none outline-none px-3 py-2 text-sm w-full font-bold dark:text-white placeholder:text-slate-500"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full text-slate-400">
+                <X size={14} />
               </button>
             )}
+            <kbd className="hidden md:inline-flex items-center gap-1 text-[10px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-lg text-slate-500 font-bold ml-2 shadow-sm">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </div>
+
+          <div className="flex items-center gap-2 md:gap-4">
+            <WeatherWidget />
             <button 
               onClick={toggleDarkMode}
-              className={cn("p-2 rounded-full transition-all group", isDarkMode ? "hover:bg-slate-800" : "hover:bg-slate-100")}
+              className="p-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
             >
-              <div className="flex items-center gap-1">
-                {isDarkMode ? <Sun size={22} className="text-yellow-400" /> : <Moon size={22} className="text-slate-600" />}
-              </div>
+              {isDarkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} />}
             </button>
             
-            <div className="h-8 flex items-center justify-center mx-1 hidden md:flex text-slate-200">
-            </div>
+            <div className="h-8 w-px bg-slate-100 dark:bg-slate-800 mx-1 hidden sm:block" />
             
             {currentUser && (
                <div className="flex items-center gap-1 md:gap-2">
@@ -4761,12 +4907,16 @@ export default function App() {
               transition={{ duration: 0.4 }}
               className="max-w-4xl mx-auto space-y-8"
             >
+              <ShareFloatingButtons title={selectedArticle.title} url={window.location.href} />
+              
               <div className="space-y-4 text-center">
-                <button onClick={goHome} className="text-primary text-xs font-bold flex items-center gap-1 justify-center mb-4">
-                  <ArrowLeft size={14} /> Retour à l'accueil
-                </button>
-                <Badge category={selectedArticle.category} icon={siteSettings?.categories_icons?.[selectedArticle.category]}>{selectedArticle.category || 'Actualité'}</Badge>
-                <h1 className="text-2xl md:text-4xl font-display font-black leading-[1.1] tracking-tight text-slate-900">
+                <Breadcrumb items={[
+                  { label: "Accueil", onClick: goHome },
+                  { label: selectedArticle.category || 'Actualité', onClick: () => handleCategoryClick(selectedArticle.category) },
+                  { label: "Lecture", active: true }
+                ]} />
+                
+                <h1 className="text-2xl md:text-5xl font-display font-black leading-[1.1] tracking-tight text-slate-900 dark:text-white border-b-4 border-primary/10 pb-6 mb-6">
                   {selectedArticle.title || 'Sans titre'}
                 </h1>
                 {selectedArticle.tags && Array.isArray(selectedArticle.tags) && selectedArticle.tags.length > 0 && (
@@ -4778,14 +4928,14 @@ export default function App() {
                           setSearchQuery(tag);
                           navigateTo('search');
                         }}
-                        className="text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-primary/10 hover:text-primary px-3 py-1 rounded-full uppercase tracking-widest transition-colors"
+                        className="text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary/10 hover:text-primary px-3 py-1 rounded-full uppercase tracking-widest transition-colors border border-slate-200 dark:border-slate-700"
                       >
                         #{tag}
                       </button>
                     ))}
                   </div>
                 )}
-                  <div className="flex items-center justify-center gap-4 text-sm text-slate-500 font-sans">
+                  <div className="flex items-center justify-center gap-4 text-sm text-slate-700 dark:text-slate-300 font-sans">
                     <div 
                       className="flex items-center gap-2 cursor-pointer group"
                       onClick={() => handleAuthorClick(selectedArticle.author || 'Rédaction')}
@@ -6139,112 +6289,10 @@ Dernière mise à jour : Avril 2026
         </AnimatePresence>
       </main>
 
-      {/* Footer */}
       {!['admin', 'admin-login'].includes(currentView) && (
-      <footer className={cn(
-        "border-t py-12 md:py-20 transition-colors",
-        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
-      )}>
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          <div className="space-y-6">
-            <div onClick={goHome} className="flex flex-col gap-6 cursor-pointer">
-              <img 
-                src="https://raw.githubusercontent.com/Akwabanews/Sources/main/images/2DB685A1-EE6B-478E-B70B-58F490D2948A.jpeg" 
-                alt="Akwaba Info Logo" 
-                className="w-40 h-40 md:w-56 md:h-56 object-contain rounded-[40px] shadow-2xl border border-slate-100"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                decoding="async"
-              />
-              <h2 className="text-3xl font-black tracking-tighter">
-                AKWABA <span className="text-primary">INFO</span>
-              </h2>
-            </div>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              {(siteSettings.abouttext || "").length > 200 
-                ? `${siteSettings.abouttext?.substring(0, 197)}...` 
-                : siteSettings.abouttext}
-            </p>
-              <div className="flex gap-4">
-                {siteSettings.twitterurl && (
-                  <a href={siteSettings.twitterurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
-                    <Twitter size={20} />
-                  </a>
-                )}
-                {siteSettings.facebookurl && (
-                  <a href={siteSettings.facebookurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
-                    <Facebook size={20} />
-                  </a>
-                )}
-                {siteSettings.instagramurl && (
-                  <a href={siteSettings.instagramurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
-                    <Instagram size={20} />
-                  </a>
-                )}
-                {siteSettings.tiktokurl && (
-                  <a href={siteSettings.tiktokurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
-                    <Music size={20} />
-                  </a>
-                )}
-                {siteSettings.linkedinurl && (
-                  <a href={siteSettings.linkedinurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
-                    <Linkedin size={20} />
-                  </a>
-                )}
-                {siteSettings.youtubeurl && (
-                  <a href={siteSettings.youtubeurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
-                    <Youtube size={20} />
-                  </a>
-                )}
-              </div>
-          </div>
-
-          <div className="space-y-6">
-            <h4 className="font-black text-sm uppercase tracking-widest">Catégories</h4>
-            <ul className="space-y-3 text-sm text-slate-500">
-              {categories.slice(1).map(cat => (
-                <li key={cat} onClick={() => handleCategoryClick(cat)} className="hover:text-primary cursor-pointer transition-colors flex items-center gap-2">
-                  <span>{siteSettings?.categories_icons?.[cat] || '📰'}</span>
-                  {cat}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="space-y-6">
-              <h4 className="font-black text-sm uppercase tracking-widest">Rédaction</h4>
-              <ul className="space-y-3 text-sm text-slate-500">
-                {MOCK_AUTHORS.slice(0, 4).map(author => (
-                  <li key={author.id} onClick={() => handleAuthorClick(author.name)} className="hover:text-primary cursor-pointer transition-colors flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                    {author.name}
-                  </li>
-                ))}
-                <li onClick={() => navigateTo('authors')} className="font-bold text-primary hover:underline cursor-pointer pt-2">Toute l'équipe</li>
-              </ul>
-          </div>
-
-          <div className="space-y-6">
-              <h4 className="font-black text-sm uppercase tracking-widest">À propos</h4>
-              <ul className="space-y-3 text-sm text-slate-500">
-                <li onClick={() => navigateTo('about')} className="hover:text-primary cursor-pointer transition-colors">À propos</li>
-                <li onClick={() => navigateTo('privacy')} className="hover:text-primary cursor-pointer transition-colors">Confidentialité</li>
-                <li onClick={() => navigateTo('cookies')} className="hover:text-primary cursor-pointer transition-colors">Cookies</li>
-                <li onClick={() => navigateTo('terms')} className="hover:text-primary cursor-pointer transition-colors">Conditions</li>
-              </ul>
-          </div>
-
-          <div className="space-y-6">
-            <p onClick={() => navigateTo('contact')} className="text-sm font-bold text-primary cursor-pointer hover:underline text-center">Support & Contacts</p>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-slate-100 text-center text-xs text-slate-400">
-          <div className="py-4 select-none">
-            © 2026 Akwaba Info. Tous droits réservés. Développé avec passion en Afrique.
-          </div>
-        </div>
-      </footer>
+        <Footer onNavigate={navigateTo} categories={categories} />
       )}
+      <BackToTop />
 
       {/* Mobile Bottom Nav */}
       {!['admin', 'admin-login'].includes(currentView) && (
@@ -6252,21 +6300,21 @@ Dernière mise à jour : Avril 2026
         "lg:hidden fixed bottom-0 left-0 right-0 h-16 backdrop-blur-xl border-t flex items-center justify-around px-4 z-50",
         isDarkMode ? "bg-slate-950/90 border-slate-800" : "bg-white/90 border-slate-200"
       )}>
-        <button onClick={goHome} className={cn("flex flex-col items-center gap-1", currentView === 'home' ? "text-primary" : "text-slate-400")}>
+        <button onClick={goHome} className={cn("flex flex-col items-center gap-1", currentView === 'home' ? "text-primary" : "text-slate-500 dark:text-slate-400")}>
           <Home size={20} />
-          <span className="text-[10px] font-bold">Accueil</span>
+          <span className="text-[10px] font-black uppercase tracking-wider">Accueil</span>
         </button>
-        <button onClick={() => navigateTo('search')} className={cn("flex flex-col items-center gap-1", currentView === 'search' ? "text-primary" : "text-slate-400")}>
+        <button onClick={() => navigateTo('search')} className={cn("flex flex-col items-center gap-1", currentView === 'search' ? "text-primary" : "text-slate-500 dark:text-slate-400")}>
           <Search size={20} />
-          <span className="text-[10px] font-bold">Recherche</span>
+          <span className="text-[10px] font-black uppercase tracking-wider">Recherche</span>
         </button>
-        <button onClick={() => navigateTo('donate')} className={cn("flex flex-col items-center gap-1", currentView === 'donate' ? "text-primary" : "text-slate-400")}>
+        <button onClick={() => navigateTo('donate')} className={cn("flex flex-col items-center gap-1", currentView === 'donate' ? "text-primary" : "text-slate-500 dark:text-slate-400")}>
           <Heart size={20} />
-          <span className="text-[10px] font-bold">Dons</span>
+          <span className="text-[10px] font-black uppercase tracking-wider">Dons</span>
         </button>
-        <button onClick={() => navigateTo('profile')} className={cn("flex flex-col items-center gap-1", currentView === 'profile' ? "text-primary" : "text-slate-400")}>
+        <button onClick={() => navigateTo('profile')} className={cn("flex flex-col items-center gap-1", currentView === 'profile' ? "text-primary" : "text-slate-500 dark:text-slate-400")}>
           <User size={20} />
-          <span className="text-[10px] font-bold">Profil</span>
+          <span className="text-[10px] font-black uppercase tracking-wider">Profil</span>
         </button>
       </nav>
       )}
