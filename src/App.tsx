@@ -138,7 +138,7 @@ const WeatherWidget = () => {
   }, []);
 
   return (
-    <div className="hidden lg:flex flex-col items-end gap-0.5 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 pr-4 mr-4">
+    <div className="hidden lg:flex flex-col items-end gap-0.5 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 border-r border-slate-100 dark:border-slate-800 pr-4 mr-4">
       <div className="flex items-center gap-1.5 text-slate-900 dark:text-white">
         <Clock size={12} className="text-primary" />
         {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -152,7 +152,7 @@ const TopNotice = ({ message, onClose }: { message: string, onClose: () => void 
   <motion.div 
     initial={{ y: -100 }}
     animate={{ y: 0 }}
-    className="bg-primary text-white py-2 px-4 relative z-[200] flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em]"
+    className="bg-primary text-slate-950 py-2 px-4 relative z-[200] flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em]"
   >
     <div className="flex items-center gap-2">
       <TrendingUp size={12} className="animate-pulse" />
@@ -2251,9 +2251,9 @@ const SplashScreen = ({ isDarkMode }: { isDarkMode: boolean }) => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="text-4xl md:text-6xl font-black tracking-tighter"
+            className="text-4xl md:text-6xl font-black tracking-tighter uppercase"
           >
-            AKWABA <span className="text-primary">INFO</span>
+            <span className="text-black dark:text-white">AKWABA</span> <span className="text-primary">INFO</span>
           </motion.h1>
           <motion.p 
             initial={{ y: 20, opacity: 0 }}
@@ -4462,8 +4462,10 @@ export default function App() {
                 referrerPolicy="no-referrer"
               />
               <div className="flex flex-col">
-                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter leading-none text-slate-950 dark:text-white uppercase">AKWABA <span className="text-primary">INFO</span></h1>
-                <span className="text-[8px] md:text-[10px] font-extrabold text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">Premier sur l'Afrique</span>
+                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter leading-none uppercase">
+                  <span className="text-black dark:text-white">AKWABA</span> <span className="text-primary">INFO</span>
+                </h1>
+                <span className="text-[8px] md:text-[10px] font-black text-slate-800 dark:text-slate-400 uppercase tracking-[0.2em] mt-0.5">Premier sur l'Afrique</span>
               </div>
             </div>
           </div>
@@ -5032,7 +5034,7 @@ export default function App() {
                     </div>
                   <GoogleAd className="mb-8" />
                   
-                  <div className="markdown-body text-base md:text-lg leading-relaxed relative">
+                  <div className="markdown-body text-base md:text-lg leading-relaxed relative text-slate-900 dark:text-slate-100">
                     {(() => {
                       if (!selectedArticle) return null;
                       
