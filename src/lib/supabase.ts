@@ -16,7 +16,8 @@ import {
   LiveUpdate,
   WebTV,
   CulturePost,
-  AdminActivityLog
+  AdminActivityLog,
+  Author
 } from '../types';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || supabaseConfig.supabaseUrl;
@@ -620,6 +621,48 @@ export const SupabaseService = {
   async deleteLiveBlog(id: string): Promise<void> {
     if (isPlaceholder) return;
     const { error } = await supabase.from('live_blogs').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  // Authors
+  async getAuthors(): Promise<Author[]> {
+    if (isPlaceholder) {
+      try {
+        const saved = localStorage.getItem('akwaba_authors');
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        console.error('Error parsing akwaba_authors from localStorage:', e);
+        return [];
+      }
+    }
+    const { data, error } = await supabase
+      .from('authors')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) return [];
+    return data as Author[];
+  },
+
+  async saveAuthor(author: Author): Promise<void> {
+    if (isPlaceholder) {
+      const authors = JSON.parse(localStorage.getItem('akwaba_authors') || '[]');
+      const index = authors.findIndex((a: any) => a.id === author.id);
+      if (index >= 0) authors[index] = author;
+      else authors.push(author);
+      localStorage.setItem('akwaba_authors', JSON.stringify(authors));
+      return;
+    }
+    const { error } = await supabase.from('authors').upsert(author);
+    if (error) throw error;
+  },
+
+  async deleteAuthor(id: string): Promise<void> {
+    if (isPlaceholder) {
+      const authors = JSON.parse(localStorage.getItem('akwaba_authors') || '[]');
+      localStorage.setItem('akwaba_authors', JSON.stringify(authors.filter((a: any) => a.id !== id)));
+      return;
+    }
+    const { error } = await supabase.from('authors').delete().eq('id', id);
     if (error) throw error;
   },
 

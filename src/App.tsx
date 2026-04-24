@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import { 
   Menu, 
   Search, 
@@ -80,7 +81,7 @@ import { fr } from 'date-fns/locale';
 import { MOCK_ARTICLES, MOCK_EVENTS, MOCK_AUTHORS, MOCK_CULTURE } from './constants';
 import { Article, Comment, Event, SiteSettings, Subscriber, MediaAsset, Poll, Classified, LiveBlog, AppNotification, SupportMessage, Author, WebTV, CulturePost, AdminActivityLog } from './types';
 import { cn, optimizeImage, getYoutubeId, safeFormatDate } from './lib/utils';
-import { AdminLogin, AdminDashboard, AdminEditor, ExportModal, PollEditor, LiveBlogEditor, WebTVEditor, ClassifiedEditor, CulturePostEditor } from './components/Admin';
+import { AdminLogin, AdminDashboard, AdminEditor, ExportModal, PollEditor, LiveBlogEditor, WebTVEditor, ClassifiedEditor, CulturePostEditor, AuthorEditor } from './components/Admin';
 import { PulseSidebar } from './components/PulseSidebar';
 import { AuthModal } from './components/AuthModal';
 import { AuthorProfile } from './components/AuthorProfile';
@@ -357,6 +358,7 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
   categoryIcon?: string;
 }) => {
   if (!article) return null;
+
   if (variant === 'hero') {
     return (
       <motion.div 
@@ -591,6 +593,23 @@ const ArticleCarousel = ({
           ))}
         </motion.div>
       </div>
+
+      {/* Pagination Dots */}
+      <div className="flex justify-center gap-1.5 pt-2">
+        {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setScrollIndex(i)}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-300",
+              scrollIndex === i 
+                ? "w-6 bg-primary" 
+                : "w-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600"
+            )}
+            title={`Page ${i + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -693,7 +712,7 @@ const EventSection = ({ events, onEventClick, onSeeAll }: { events: Event[], onE
     >
       <div className="max-w-7xl mx-auto px-4 mb-16">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-4">
+          <div className="space-y-6">
              <div className="flex items-center gap-3">
                 <div className="w-12 h-1 bg-primary rounded-full" />
                 <span className="text-secondary font-black text-[10px] uppercase tracking-[0.3em]">Événements Immédiats</span>
@@ -2078,6 +2097,8 @@ const safeSession = {
 };
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [currentView, setCurrentView] = useState<'home' | 'article' | 'search' | 'donate' | 'about' | 'privacy' | 'terms' | 'contact' | 'cookies' | 'event' | 'all-events' | 'admin' | 'admin-login' | 'webtv' | 'profile' | 'classifieds' | 'live-blog' | 'author-profile' | 'authors' | 'unsubscribe' | 'culture-detail' | 'all-culture'>(() => {
     const saved = safeStorage.get('akwaba_current_view');
     if (saved === 'article') {
@@ -2158,6 +2179,8 @@ export default function App() {
   const [editingLiveBlog, setEditingLiveBlog] = useState<LiveBlog | null>(null);
   const [editingClassified, setEditingClassified] = useState<Classified | null>(null);
   const [adminWebTV, setAdminWebTV] = useState<WebTV[]>([]);
+  const [adminAuthors, setAdminAuthors] = useState<Author[]>([]);
+  const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
   const [editingWebTV, setEditingWebTV] = useState<WebTV | null>(null);
   const [isCloudLoaded, setIsCloudLoaded] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -2561,6 +2584,77 @@ export default function App() {
     currentViewRef.current = currentView;
   }, [currentView]);
 
+  // Sync state with URL for deep linking and back button support
+  useEffect(() => {
+    const path = location.pathname;
+    const parts = path.split('/').filter(Boolean);
+    
+    if (path === '/') {
+      setCurrentView('home');
+    } else if (path.startsWith('/article/')) {
+      const slug = parts[1];
+      if (slug) {
+        const article = adminArticles.find(a => (a.slug || a.id) === slug);
+        if (article) {
+          setSelectedArticle(article);
+          setCurrentView('article');
+        }
+      }
+    } else if (path.startsWith('/evenement/')) {
+      const slug = parts[1];
+      if (slug) {
+        const event = adminEvents.find(e => (e.slug || e.id) === slug);
+        if (event) {
+          setSelectedEvent(event);
+          setCurrentView('event');
+        }
+      }
+    } else if (path.startsWith('/culture/')) {
+      const slug = parts[1];
+      if (slug) {
+        const culture = adminCulturePosts.find(c => (c.slug || c.id) === slug);
+        if (culture) {
+          setSelectedCulturePost(culture);
+          setCurrentView('culture-detail');
+        } else {
+          setCurrentView('all-culture');
+        }
+      } else {
+        setCurrentView('all-culture');
+      }
+    } else if (path === '/profil') {
+      setCurrentView('profile');
+    } else if (path === '/admin') {
+      setCurrentView('admin');
+    } else if (path === '/recherche') {
+      setCurrentView('search');
+    } else if (path === '/agenda') {
+      setCurrentView('all-events');
+    } else if (path === '/a-propos') {
+      setCurrentView('about');
+    } else if (path === '/contact') {
+      setCurrentView('contact');
+    } else if (path === '/donate') {
+      setCurrentView('donate');
+    } else if (path === '/webtv') {
+      setCurrentView('webtv');
+    } else if (path === '/annonces') {
+      setCurrentView('classifieds');
+    } else if (path === '/live') {
+      setCurrentView('live-blog');
+    } else if (path === '/auteurs') {
+      setCurrentView('authors');
+    } else if (path === '/politique-confidentialite') {
+      setCurrentView('privacy');
+    } else if (path === '/conditions-utilisation') {
+      setCurrentView('terms');
+    } else if (path === '/cookies') {
+      setCurrentView('cookies');
+    } else if (path === '/unsubscribe') {
+      setCurrentView('unsubscribe');
+    }
+  }, [location.pathname, adminArticles, adminEvents, adminCulturePosts]);
+
   // Auth Listener & Data Sync
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -2615,7 +2709,7 @@ export default function App() {
           // Auto-redirect admin to dashboard if they are on login page or just arriving via magic link/new session
           const isMagicLinkRedirect = window.location.hash.includes('access_token=') || window.location.search.includes('code=');
           if (currentV === 'admin-login' || isMagicLinkRedirect) {
-            setCurrentView('admin');
+            navigate('/admin');
             // Clean hash to avoid double trigger
             if (window.location.hash) window.history.replaceState({}, '', window.location.pathname);
           }
@@ -2634,7 +2728,7 @@ export default function App() {
     // Initial Data Fetch
     const fetchData = async () => {
       try {
-        const [cloudArticles, cloudEvents, cloudSettings, cloudComments, cloudSubs, cloudMedia, cloudClassifieds, cloudLiveBlogs, cloudCulture] = await Promise.all([
+        const [cloudArticles, cloudEvents, cloudSettings, cloudComments, cloudSubs, cloudMedia, cloudClassifieds, cloudLiveBlogs, cloudCulture, cloudAuthors] = await Promise.all([
           SupabaseService.getArticles().catch(() => []),
           SupabaseService.getEvents().catch(() => []),
           SupabaseService.getSettings().catch(() => null),
@@ -2643,7 +2737,8 @@ export default function App() {
           SupabaseService.getMediaLibrary().catch(() => []),
           SupabaseService.getClassifieds().catch(() => []),
           SupabaseService.getLiveBlogs().catch(() => []),
-          SupabaseService.getAllCulturePosts().catch(() => [])
+          SupabaseService.getAllCulturePosts().catch(() => []),
+          SupabaseService.getAuthors().catch(() => [])
         ]);
         
         if (cloudArticles && cloudArticles.length > 0) setAdminArticles(cloudArticles);
@@ -2655,6 +2750,8 @@ export default function App() {
         if (cloudClassifieds && cloudClassifieds.length > 0) setClassifieds(cloudClassifieds);
         if (cloudLiveBlogs && cloudLiveBlogs.length > 0) setLiveBlogs(cloudLiveBlogs);
         if (cloudCulture && cloudCulture.length > 0) setAdminCulturePosts(cloudCulture);
+        if (cloudAuthors && cloudAuthors.length > 0) setAdminAuthors(cloudAuthors);
+        else setAdminAuthors(MOCK_AUTHORS);
       } catch (error: any) {
         console.warn("Silent failure in data fetching, using cache/mocks:", error);
       } finally {
@@ -2802,6 +2899,34 @@ export default function App() {
     } catch (error) {
        console.error(error);
        setActiveNotification({ message: "Erreur lors de la suppression.", type: 'urgent' });
+    }
+  };
+
+  const handleSaveAuthor = async (author: Author) => {
+    try {
+      await SupabaseService.saveAuthor(author);
+      setAdminAuthors(prev => {
+        const isNew = !prev.find(a => a.id === author.id);
+        if (isNew) return [...prev, author];
+        return prev.map(a => a.id === author.id ? author : a);
+      });
+      setEditingAuthor(null);
+      setActiveNotification({ message: "Auteur enregistré avec succès !", type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setActiveNotification({ message: "Erreur lors de l'enregistrement.", type: 'urgent' });
+    }
+  };
+
+  const handleDeleteAuthor = async (id: string) => {
+    if (!window.confirm("Voulez-vous vraiment supprimer cet auteur ?")) return;
+    try {
+      await SupabaseService.deleteAuthor(id);
+      setAdminAuthors(prev => prev.filter(a => a.id !== id));
+      setActiveNotification({ message: "Auteur supprimé.", type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setActiveNotification({ message: "Erreur lors de la suppression.", type: 'urgent' });
     }
   };
 
@@ -3085,7 +3210,7 @@ export default function App() {
       await auth.signOut();
       setIsAdminAuthenticated(false);
       localStorage.removeItem('akwaba_is_admin');
-      setCurrentView('home');
+      navigate('/');
     } catch (error) {
       console.error("Logout Error:", error);
     }
@@ -3637,7 +3762,7 @@ export default function App() {
   const handleArticleClick = async (article: Article) => {
     if (!article) return;
     setSelectedArticle(article);
-    setCurrentView('article');
+    navigate(`/article/${article.slug || article.id}`);
     setIsMenuOpen(false);
     window.scrollTo(0, 0);
     
@@ -3658,7 +3783,7 @@ export default function App() {
     const author = MOCK_AUTHORS.find(a => a.name === authorName);
     if (author) {
       setSelectedAuthor(author);
-      setCurrentView('author-profile');
+      navigate('/auteurs');
       setIsMenuOpen(false);
       window.scrollTo(0, 0);
     } else {
@@ -3673,7 +3798,7 @@ export default function App() {
          specialties: ['Actualité']
        };
        setSelectedAuthor(fallbackAuthor);
-       setCurrentView('author-profile');
+       navigate('/auteurs');
        setIsMenuOpen(false);
        window.scrollTo(0, 0);
     }
@@ -3681,14 +3806,14 @@ export default function App() {
 
   const handleEventClick = (event: Event) => {
     setSelectedEvent(event);
-    setCurrentView('event');
+    navigate(`/evenement/${event.slug || event.id}`);
     setIsMenuOpen(false);
     window.scrollTo(0, 0);
   };
 
   const handleCultureClick = (post: CulturePost) => {
     setSelectedCulturePost(post);
-    setCurrentView('culture-detail');
+    navigate(`/culture/${post.slug || post.id}`);
     setIsMenuOpen(false);
     window.scrollTo(0, 0);
     // Silent update for views
@@ -3697,7 +3822,7 @@ export default function App() {
 
   const handleCategoryClick = (cat: string) => {
     setActiveCategory(cat);
-    setCurrentView('home');
+    navigate('/');
     setSelectedArticle(null);
     setSelectedAuthor(null);
     setIsMenuOpen(false);
@@ -3705,11 +3830,23 @@ export default function App() {
   };
 
   const navigateTo = (view: typeof currentView) => {
-    setCurrentView(view);
-    safeStorage.set('akwaba_current_view', view);
-    setSelectedArticle(null);
-    setSelectedEvent(null);
-    setSelectedAuthor(null);
+    switch(view) {
+      case 'home': navigate('/'); break;
+      case 'article': if (selectedArticle) navigate(`/article/${selectedArticle.slug || selectedArticle.id}`); break;
+      case 'search': navigate('/recherche'); break;
+      case 'donate': navigate('/donate'); break;
+      case 'about': navigate('/a-propos'); break;
+      case 'contact': navigate('/contact'); break;
+      case 'webtv': navigate('/webtv'); break;
+      case 'profile': navigate('/profil'); break;
+      case 'classifieds': navigate('/annonces'); break;
+      case 'all-events': navigate('/agenda'); break;
+      case 'admin': navigate('/admin'); break;
+      case 'authors': navigate('/auteurs'); break;
+      case 'all-culture': navigate('/culture'); break;
+      case 'live-blog': navigate('/live'); break;
+      default: navigate('/');
+    }
     setIsMenuOpen(false);
     window.scrollTo(0, 0);
   };
@@ -3717,13 +3854,14 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.has('email') && window.location.pathname.includes('/unsubscribe')) {
-       setCurrentView('unsubscribe');
+       navigate('/unsubscribe' + window.location.search);
     }
     // Handle home redirect if needed
   }, []);
 
   const goHome = () => {
-    setCurrentView('home');
+    setActiveCategory('À la une');
+    navigate('/');
     setSelectedArticle(null);
     setSelectedEvent(null);
     setSelectedAuthor(null);
@@ -3781,7 +3919,7 @@ export default function App() {
         <MonitorOff size={64} className="text-slate-300 animate-pulse" />
         <h1 className="text-4xl font-black italic">Site en Maintenance</h1>
         <p className="max-w-md text-slate-500 font-medium leading-relaxed">Nous effectuons actuellement des mises à jour techniques pour améliorer votre expérience. Akwaba Info sera bientôt de retour.</p>
-        <button onClick={() => setCurrentView('admin')} className="text-xs font-bold text-slate-300 hover:text-slate-900 transition-colors uppercase tracking-widest">Administration</button>
+        <button onClick={() => navigate('/admin')} className="text-xs font-bold text-slate-300 hover:text-slate-900 transition-colors uppercase tracking-widest">Administration</button>
       </div>
     );
   }
@@ -4089,10 +4227,10 @@ export default function App() {
                   const newCount = adminClickCount + 1;
                   if (newCount >= 5) {
                     if (isAdminAuthenticated) {
-                      setCurrentView('admin');
+                      navigate('/admin');
                       setActiveNotification("Mode Admin : Bonjour !");
                     } else {
-                      setCurrentView('admin-login');
+                      navigate('/admin');
                       setActiveNotification("Mode Admin : Authentification requise.");
                     }
                     setAdminClickCount(0);
@@ -5895,6 +6033,12 @@ Dernière mise à jour : Avril 2026
                   onSave={handleSaveCulturePost}
                   onCancel={() => setEditingCulturePost(null)}
                 />
+              ) : editingAuthor ? (
+                <AuthorEditor 
+                  author={editingAuthor}
+                  onSave={handleSaveAuthor}
+                  onCancel={() => setEditingAuthor(null)}
+                />
               ) : (
                 <AdminDashboard 
                   articles={adminArticles}
@@ -5932,6 +6076,11 @@ Dernière mise à jour : Avril 2026
                   onBlockUser={handleBlockUser}
                   onSaveSettings={handleSaveSettings}
                   onLogout={handleAdminLogout}
+                  onSaveAuthor={handleSaveAuthor}
+                  authors={adminAuthors}
+                  onEditAuthor={(a) => setEditingAuthor(a)}
+                  onCreateAuthor={() => setEditingAuthor({ id: crypto.randomUUID(), name: '', role: '', bio: '', image: '', socials: {}, specialties: [] })}
+                  onDeleteAuthor={handleDeleteAuthor}
                   culturePosts={adminCulturePosts}
                   onEditCulturePost={(p) => setEditingCulturePost(p)}
                   onCreateCulturePost={() => setEditingCulturePost({ 

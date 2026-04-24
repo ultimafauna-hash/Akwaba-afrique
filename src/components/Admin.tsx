@@ -43,6 +43,8 @@ import {
   Info,
   Facebook,
   Twitter,
+  Linkedin,
+  Instagram,
   Users,
   AlertTriangle,
   Megaphone,
@@ -100,7 +102,8 @@ import {
   WebTV, 
   Classified,
   CulturePost,
-  AdminActivityLog
+  AdminActivityLog,
+  Author
 } from '../types';
 import { cn, optimizeImage } from '../lib/utils';
 import ReactMarkdown from 'react-markdown';
@@ -471,6 +474,11 @@ export const AdminDashboard = ({
   onEditWebTV,
   onCreateWebTV,
   onDeleteWebTV,
+  authors = [],
+  onEditAuthor,
+  onCreateAuthor,
+  onDeleteAuthor,
+  onSaveAuthor,
   currentUser,
   activityLogs = []
 }: { 
@@ -518,6 +526,11 @@ export const AdminDashboard = ({
   onValidateTransaction?: (tid: string, uid: string) => Promise<void>,
   initialTab?: string,
   setActiveNotification?: (n: { message: string, type: 'success' | 'urgent' | 'info' } | null) => void,
+  authors: Author[],
+  onEditAuthor: (a: Author) => void,
+  onCreateAuthor: () => void,
+  onDeleteAuthor: (id: string) => void,
+  onSaveAuthor: (a: Author) => void,
   currentUser?: UserProfile | null
 }) => {
   const [activeTab, setActiveTab] = useState<string>(
@@ -784,6 +797,7 @@ export const AdminDashboard = ({
             { id: 'polls', label: 'Sondages', icon: BarChart3 },
             { id: 'live-blog', label: 'Direct', icon: Zap },
             { id: 'web-tv', label: 'Web TV', icon: Tv },
+            { id: 'team', label: 'Équipe', icon: Users },
             { id: 'classifieds', label: 'Annonces', icon: Megaphone },
             { id: 'comments', label: 'Commentaires', icon: MessageSquare },
             { id: 'media', label: 'Médias', icon: ImagePlus },
@@ -916,7 +930,7 @@ export const AdminDashboard = ({
               transition={{ duration: 0.2 }}
               className="max-w-[1600px] mx-auto"
             >
-              {(activeTab === 'articles' || activeTab === 'events' || activeTab === 'polls' || activeTab === 'live-blog' || activeTab === 'web-tv' || activeTab === 'classifieds' || activeTab === 'culture') && (
+              {(activeTab === 'articles' || activeTab === 'events' || activeTab === 'polls' || activeTab === 'live-blog' || activeTab === 'web-tv' || activeTab === 'classifieds' || activeTab === 'culture' || activeTab === 'team') && (
                  <div className="mb-8 flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-900 p-4 md:p-6 rounded-[30px] border border-slate-100 dark:border-slate-800 shadow-sm gap-4 transition-colors">
                     <div className="flex items-center gap-4 flex-1 w-full">
                       <div className="relative group max-w-none md:max-w-md w-full">
@@ -939,10 +953,11 @@ export const AdminDashboard = ({
                         else if (activeTab === 'web-tv') onCreateWebTV();
                         else if (activeTab === 'classifieds') onCreateClassified();
                         else if (activeTab === 'culture') onCreateCulturePost();
+                        else if (activeTab === 'team') onCreateAuthor();
                       }}
                       className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-primary text-white font-black rounded-[18px] text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20"
                     >
-                      <Plus size={16} /> NOUVEAU {activeTab === 'culture' ? 'POST CULTURE' : activeTab.slice(0, -1).toUpperCase()}
+                      <Plus size={16} /> NOUVEAU {activeTab === 'culture' ? 'POST CULTURE' : activeTab === 'team' ? 'MEMBRE' : activeTab.slice(0, -1).toUpperCase()}
                     </button>
                  </div>
               )}
@@ -2462,19 +2477,20 @@ export const AdminDashboard = ({
             </div>
           )}
 
-          {(activeTab === 'articles' || activeTab === 'events' || activeTab === 'live-blog' || activeTab === 'comments' || activeTab === 'classifieds' || activeTab === 'culture') && (
+          {(activeTab === 'articles' || activeTab === 'events' || activeTab === 'live-blog' || activeTab === 'comments' || activeTab === 'classifieds' || activeTab === 'culture' || activeTab === 'team') && (
             <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
               <div className="grid grid-cols-12 px-6 py-4 bg-slate-50/50 border-bottom border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <div className="col-span-8 md:col-span-6">Nom / Titre</div>
+                <div className="col-span-8 md:col-span-6">{activeTab === 'team' ? 'Nom' : 'Nom / Titre'}</div>
                 <div className="hidden md:block col-span-2">
                   {activeTab === 'articles' ? 'Catégorie' : 
                    activeTab === 'events' ? 'Lieu' : 
                    activeTab === 'comments' ? 'Source' :
                    activeTab === 'live-blog' ? 'Status' :
                    activeTab === 'culture' ? 'Période' :
+                   activeTab === 'team' ? 'Rôle' :
                    'Info'}
                 </div>
-                <div className="hidden sm:block col-span-2">Date / Stats</div>
+                <div className="hidden sm:block col-span-2">{activeTab === 'team' ? 'Spécialités' : 'Date / Stats'}</div>
                 <div className="col-span-4 md:col-span-2 text-right">Actions</div>
               </div>
               <div className="divide-y divide-slate-100">
@@ -2681,6 +2697,40 @@ export const AdminDashboard = ({
                       </button>
                       <button 
                         onClick={() => onDeleteClassified(ad.id)}
+                        className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all opacity-70 lg:opacity-0 lg:group-hover:opacity-100"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {activeTab === 'team' && authors.filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase())).map(author => (
+                  <div key={author.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-50/50 transition-colors group">
+                    <div className="col-span-8 md:col-span-6 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100">
+                        {author.image && <img src={author.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 leading-tight line-clamp-1">{author.name}</h4>
+                        <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">{author.role}</p>
+                      </div>
+                    </div>
+                    <div className="hidden md:block col-span-2 text-xs font-bold text-slate-600 line-clamp-1 italic">
+                      {author.role}
+                    </div>
+                    <div className="hidden sm:block col-span-2 text-xs text-slate-500 font-mono">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">{author.specialties.slice(0, 2).join(', ')}</div>
+                    </div>
+                    <div className="col-span-4 md:col-span-2 flex justify-end gap-1 md:gap-2 pr-0 md:pr-2">
+                      <button 
+                        onClick={() => onEditAuthor(author)}
+                        className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => onDeleteAuthor(author.id)}
                         className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all opacity-70 lg:opacity-0 lg:group-hover:opacity-100"
                       >
                         <Trash size={16} />
@@ -4227,6 +4277,181 @@ export const WebTVEditor = ({ video, onSave, onCancel, categories }: { video: Pa
             value={formData.description}
             onChange={e => setFormData({...formData, description: e.target.value})}
           />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const AuthorEditor = ({ author, onSave, onCancel }: { author: Partial<Author>, onSave: (a: Author) => void, onCancel: () => void }) => {
+  const [formData, setFormData] = useState<Author>({
+    id: author.id || Date.now().toString(),
+    name: author.name || '',
+    role: author.role || '',
+    bio: author.bio || '',
+    image: author.image || '',
+    socials: author.socials || {},
+    specialties: author.specialties || []
+  });
+
+  const [newSpecialty, setNewSpecialty] = useState('');
+
+  return (
+    <div className="max-w-4xl mx-auto py-10 px-4 space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <button 
+          onClick={onCancel}
+          className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black transition-all text-sm uppercase tracking-widest"
+        >
+          <ArrowLeft size={18} /> RETOUR
+        </button>
+        <button 
+          onClick={() => onSave(formData)}
+          className="px-8 py-4 bg-primary text-white font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest border-2 border-white"
+        >
+          <Save size={18} /> ENREGISTRER
+        </button>
+      </div>
+
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl p-10 space-y-12 African-pattern">
+        <div className="flex flex-col md:flex-row gap-10">
+           <div className="w-full md:w-1/3 space-y-6">
+              <label className="text-[10px] font-black uppercase text-slate-400 px-2 italic">Photo de Profil</label>
+              <div className="relative group">
+                <div className="w-full aspect-square rounded-[32px] bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center">
+                  {formData.image ? (
+                    <img src={formData.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <User size={48} className="text-slate-200" />
+                  )}
+                </div>
+                <div className="mt-4">
+                  <GitHubImageUpload 
+                    value={formData.image || ''}
+                    onChange={(val) => setFormData({...formData, image: val})}
+                    placeholder="https://... (image)"
+                  />
+                </div>
+              </div>
+           </div>
+
+           <div className="flex-1 space-y-8">
+              <div className="space-y-4">
+                <label className="text-xs font-black uppercase tracking-widest text-primary italic px-2 flex items-center gap-2">
+                  <User size={16} /> Nom Complet
+                </label>
+                <input 
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  placeholder="Ex: Koffi Kouakou..."
+                  className="w-full bg-slate-50 border-none rounded-3xl px-8 py-6 text-xl font-black outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 italic px-2">Rôle / Titre</label>
+                <input 
+                  type="text"
+                  value={formData.role}
+                  onChange={(e) => setFormData({...formData, role: e.target.value})}
+                  placeholder="Ex: Rédacteur en Chef..."
+                  className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold outline-none"
+                />
+              </div>
+           </div>
+        </div>
+
+        <div className="space-y-4">
+           <label className="text-[10px] font-black uppercase text-slate-400 px-2 italic">Biographie</label>
+           <textarea 
+            placeholder="Parlez-nous de cet auteur..."
+            className="w-full bg-slate-50 border-none rounded-[32px] px-8 py-6 text-sm font-medium outline-none focus:ring-4 focus:ring-primary/10 transition-all min-h-[150px]"
+            value={formData.bio}
+            onChange={e => setFormData({...formData, bio: e.target.value})}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+           <div className="space-y-6">
+              <label className="text-[10px] font-black uppercase text-slate-400 px-2">Réseaux Sociaux</label>
+              <div className="space-y-4">
+                 <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl">
+                    <Twitter size={16} className="text-blue-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Twitter URL"
+                      className="bg-transparent border-none outline-none text-xs font-bold flex-1"
+                      value={formData.socials.twitter || ''}
+                      onChange={e => setFormData({...formData, socials: {...formData.socials, twitter: e.target.value}})}
+                    />
+                 </div>
+                 <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl">
+                    <Linkedin size={16} className="text-blue-700" />
+                    <input 
+                      type="text" 
+                      placeholder="LinkedIn URL"
+                      className="bg-transparent border-none outline-none text-xs font-bold flex-1"
+                      value={formData.socials.linkedin || ''}
+                      onChange={e => setFormData({...formData, socials: {...formData.socials, linkedin: e.target.value}})}
+                    />
+                 </div>
+                 <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl">
+                    <Mail size={16} className="text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Email"
+                      className="bg-transparent border-none outline-none text-xs font-bold flex-1"
+                      value={formData.socials.mail || ''}
+                      onChange={e => setFormData({...formData, socials: {...formData.socials, mail: e.target.value}})}
+                    />
+                 </div>
+              </div>
+           </div>
+
+           <div className="space-y-6">
+              <label className="text-[10px] font-black uppercase text-slate-400 px-2">Spécialités</label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                 {formData.specialties.map(spec => (
+                    <span key={spec} className="bg-primary/5 text-primary text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-2">
+                       {spec}
+                       <button onClick={() => setFormData({...formData, specialties: formData.specialties.filter(s => s !== spec)})}>
+                          <X size={10} />
+                       </button>
+                    </span>
+                 ))}
+              </div>
+              <div className="flex gap-2">
+                 <input 
+                  type="text"
+                  placeholder="Ajouter spécialité..."
+                  className="bg-slate-50 rounded-xl px-4 py-2 text-xs font-bold flex-1 border-none outline-none"
+                  value={newSpecialty}
+                  onChange={e => setNewSpecialty(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newSpecialty.trim()) {
+                      if (!formData.specialties.includes(newSpecialty.trim())) {
+                        setFormData({...formData, specialties: [...formData.specialties, newSpecialty.trim()]});
+                      }
+                      setNewSpecialty('');
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => {
+                    if (newSpecialty.trim()) {
+                      if (!formData.specialties.includes(newSpecialty.trim())) {
+                        setFormData({...formData, specialties: [...formData.specialties, newSpecialty.trim()]});
+                      }
+                      setNewSpecialty('');
+                    }
+                  }}
+                  className="p-2 bg-primary text-white rounded-xl"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+           </div>
         </div>
       </div>
     </div>
